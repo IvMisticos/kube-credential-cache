@@ -21,7 +21,7 @@ var (
 func main() {
 	// flag
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [flags] <kubeconfig-filepath>\n", path.Base(os.Args[0]))
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [flags] <kubeconfig-filepath>\n", path.Base(os.Args[0])) //nolint:errcheck
 		flag.PrintDefaults()
 	}
 	flag.BoolVar(&inPlaceFlag, "i", false, "edit file in-place")
@@ -139,7 +139,7 @@ func main() {
 }
 
 func fatal(format string, v ...any) {
-	var commit string = "main"
+	var commit = "main"
 	if i, ok := debug.ReadBuildInfo(); ok {
 		for _, v := range i.Settings {
 			if v.Key == "vcs.revision" {

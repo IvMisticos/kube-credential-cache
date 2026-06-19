@@ -33,8 +33,8 @@ func main() {
 	// configuration
 	var (
 		cacheFilepath   string
-		refreshMargin   time.Duration = time.Second * 30
-		cacheKeyEnvlist []string      = []string{"KUBE_CREDENTIAL_CACHE_USER", "AWS_PROFILE", "AWS_REGION", "AWS_VAULT"}
+		refreshMargin   = time.Second * 30
+		cacheKeyEnvlist = []string{"KUBE_CREDENTIAL_CACHE_USER", "AWS_PROFILE", "AWS_REGION", "AWS_VAULT"}
 	)
 	if e := os.Getenv("KUBE_CREDENTIAL_CACHE_FILE"); e != "" {
 		cacheFilepath = e
@@ -57,7 +57,7 @@ func main() {
 	}
 
 	// cache key
-	var cacheKey string = strings.Join(os.Args[1:], " ")
+	var cacheKey = strings.Join(os.Args[1:], " ")
 	{
 		env := ""
 		for _, key := range cacheKeyEnvlist {
@@ -87,7 +87,11 @@ func main() {
 			fatal("file open failed: %s", err)
 		}
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log("file close failed: %s", err)
+		}
+	}()
 
 	// read file
 	updated := false
@@ -174,7 +178,7 @@ func main() {
 func fatal(format string, v ...any) {
 	log(format, v...)
 
-	var commit string = "main"
+	var commit = "main"
 	if i, ok := debug.ReadBuildInfo(); ok {
 		for _, v := range i.Settings {
 			if v.Key == "vcs.revision" {
