@@ -72,5 +72,7 @@ changelog:
       - '^docs:'
       - '^test:'
 release:
-  draft: true
+  # Approval is enforced by the `release` GitHub Actions environment, so the
+  # GitHub release itself can publish directly.
+  draft: false
   prerelease: auto
