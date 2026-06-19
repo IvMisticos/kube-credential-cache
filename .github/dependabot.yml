@@ -5,7 +5,13 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    # supply-chain hardening: ignore releases for 14 days before opening PRs
+    cooldown:
+      default-days: 14
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "daily"
+    # supply-chain hardening: ignore releases for 14 days before opening PRs
+    cooldown:
+      default-days: 14
