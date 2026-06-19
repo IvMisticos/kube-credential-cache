@@ -6,37 +6,59 @@ on:
     tags:
       - "v*"
 
-permissions:
-  contents: write
-  # packages: write
-  # issues: write
+# Default to no permissions; grant the minimum needed per-job.
+permissions: {}
+
+# Never run two releases for the same ref concurrently.
+concurrency:
+  group: goreleaser-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    # Gate the whole job behind a manual approval. Configure the `release`
+    # environment in repo settings with required reviewers, and store
+    # TAP_GITHUB_TOKEN as an *environment* secret so it is only readable by
+    # this job and only after a reviewer approves the run.
+    environment: release
+    permissions:
+      contents: write # create the GitHub release for this repo
     steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v6
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          # Audit egress so any unexpected network call (e.g. an attempt to
+          # exfiltrate the PAT) is recorded. Switch to `block` + an allowlist
+          # once the legitimate endpoints are confirmed in the audit logs.
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Checkout
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           fetch-depth: 0
-      -
-        name: Fetch all tags
+          # Don't leave the default GITHUB_TOKEN in the local git config; the
+          # release uses tokens via env vars / the API instead.
+          persist-credentials: false
+
+      - name: Fetch all tags
         run: git fetch --force --tags
-      -
-        name: Set up Go
-        uses: actions/setup-go@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: "1.26.4"
-      -
-        name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v7
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89 # v7.2.2
         with:
-          # either 'goreleaser' (default) or 'goreleaser-pro'
           distribution: goreleaser
           version: "~> v2"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Your GoReleaser Pro key, if you are using the 'goreleaser-pro' distribution
-          # GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+          # Fine-grained PAT scoped to ONLY the homebrew-tap and scoop-bucket
+          # repos with `contents: write`. Store as an environment secret on the
+          # `release` environment, not a repo-wide secret.
+          TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
