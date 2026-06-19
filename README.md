@@ -162,6 +162,21 @@ Clear the cache: delete the `kube-credential-cache` entries from your OS secret 
 ###### `...Corruption detected, recreate cache file`
 A broken cache file was detected. The cause is unknown; the cache is automatically recreated.
 
+###### kubectl keeps re-running the credential plugin / prompting on every call
+The credential is being written to your secret store but never served from cache.
+The usual cause is a plugin that returns no `status.expirationTimestamp` (it shows
+up as `"expirationTimestamp":"0001-01-01T00:00:00Z"`), so kcc-cache considers it
+already expired every time. Set `KUBE_CREDENTIAL_CACHE_DEBUG=1` to see the cache
+key, hit/miss and expiry decisions on stderr. The default-TTL behaviour (above)
+handles this automatically; tune it with `KUBE_CREDENTIAL_CACHE_DEFAULT_TTL` and
+`KUBE_CREDENTIAL_CACHE_NO_EXPIRY_THRESHOLD`.
+
+> :information_source: In the OS secret store each cached credential is a single
+> entry whose name is `kube-credential-cache:<cache-key>` (e.g.
+> `kube-credential-cache:user="..." server="..."`). The `kube-credential-cache:`
+> prefix is just the service name; the rest is the cache key — it is one entry,
+> not two separate keys.
+
 ## Configuration
 
 ### kcc-cache
@@ -171,7 +186,24 @@ A broken cache file was detected. The cause is unknown; the cache is automatical
 | KUBE_CREDENTIAL_CACHE_BACKEND           | _auto_ (`keyring` if the OS secret store is reachable, otherwise `file`)                                                                                                                                                                        | storage backend: `keyring` or `file`               |
 | KUBE_CREDENTIAL_CACHE_FILE              | macOS:</br>`~/Library/Caches/kube-credential-cache/cache.json`</br>Linux:</br>`$XDG_CACHE_HOME/kube-credential-cache/cache.json`</br>`~/.cache/kube-credential-cache/cache.json`</br>Windows:</br>`%AppData%\kube-credential-cache\cache.json` | path of Cache file (`file` backend only)           |
 | KUBE_CREDENTIAL_CACHE_REFRESH_MARGIN    | `30s`                                                                                                                                                                                                                                          | margin of credential refresh                       |
+| KUBE_CREDENTIAL_CACHE_DEFAULT_TTL       | `1h`                                                                                                                                                                                                                                          | TTL applied to credentials that report no usable expiry (see below) |
+| KUBE_CREDENTIAL_CACHE_NO_EXPIRY_THRESHOLD | `24h`                                                                                                                                                                                                                                        | how far in the past a credential's expiry must be to count as "no expiry" |
 | KUBE_CREDENTIAL_CACHE_CACHEKEY_ENV_LIST | `KUBE_CREDENTIAL_CACHE_USER,AWS_PROFILE,AWS_REGION,AWS_VAULT`                                                                                                                                                                                  | comma separated env names for additional cache-key |
+| KUBE_CREDENTIAL_CACHE_DEBUG             | _unset_                                                                                                                                                                                                                                       | when set to a truthy value (`1`/`true`/`yes`/`on`), log cache key, hit/miss, expiry and refresh decisions to stderr |
+
+#### Credentials without an expiry (default TTL)
+
+Some credential plugins (for example the [passman](https://github.com/abenz1267/passman)
+krew plugin) emit an `ExecCredential` with no `status.expirationTimestamp`. That
+decodes to the zero time (`0001-01-01T00:00:00Z`), so the credential looks
+permanently expired and would be re-fetched on **every** call — defeating the
+cache while still leaving an entry in your secret store.
+
+To handle this, when a refreshed credential's expiry is more than
+`KUBE_CREDENTIAL_CACHE_NO_EXPIRY_THRESHOLD` (default `24h`) in the past, kcc-cache
+treats it as "no expiry provided" and caches it for
+`KUBE_CREDENTIAL_CACHE_DEFAULT_TTL` (default `1h`) instead. Genuinely
+recently-expired credentials (within the threshold) still refresh as before.
 
 #### Storage backends
 

@@ -48,6 +48,52 @@ func testBackendRoundTrip(t *testing.T, b Backend) {
 	}
 }
 
+func TestWithDefaultExpiry(t *testing.T) {
+	now := time.Date(2026, 6, 19, 12, 0, 0, 0, time.UTC)
+	cutoff := 24 * time.Hour
+	ttl := time.Hour
+
+	tests := []struct {
+		name    string
+		exp     time.Time
+		wantOK  bool
+		wantExp time.Time
+	}{
+		{"zero time (no expiry, e.g. passman)", time.Time{}, true, now.Add(ttl)},
+		{"far past beyond cutoff", now.Add(-48 * time.Hour), true, now.Add(ttl)},
+		{"recently expired within cutoff", now.Add(-time.Hour), false, now.Add(-time.Hour)},
+		{"valid future expiry", now.Add(2 * time.Hour), false, now.Add(2 * time.Hour)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cred := newCred("tok")
+			cred.Status.ExpirationTimestamp = tt.exp
+
+			got, ok := withDefaultExpiry(cred, cutoff, ttl, now)
+			if ok != tt.wantOK {
+				t.Fatalf("ok = %v, want %v", ok, tt.wantOK)
+			}
+			if !got.Status.ExpirationTimestamp.Equal(tt.wantExp) {
+				t.Fatalf("expiration = %s, want %s", got.Status.ExpirationTimestamp, tt.wantExp)
+			}
+		})
+	}
+}
+
+func TestIsTruthy(t *testing.T) {
+	for _, v := range []string{"", "0", "false", "no", "off", "  off  ", "FALSE"} {
+		if isTruthy(v) {
+			t.Errorf("isTruthy(%q) = true, want false", v)
+		}
+	}
+	for _, v := range []string{"1", "true", "yes", "on", "debug", "TRUE"} {
+		if !isTruthy(v) {
+			t.Errorf("isTruthy(%q) = false, want true", v)
+		}
+	}
+}
+
 func TestKeyringBackend(t *testing.T) {
 	keyring.MockInit()
 	testBackendRoundTrip(t, keyringBackend{})

@@ -68,6 +68,8 @@ func main() {
 	// configuration
 	var (
 		refreshMargin   = time.Second * 30
+		defaultTTL      = time.Hour
+		noExpiryCutoff  = time.Hour * 24
 		cacheKeyEnvlist = []string{"KUBE_CREDENTIAL_CACHE_USER", "AWS_PROFILE", "AWS_REGION", "AWS_VAULT"}
 	)
 	if e := os.Getenv("KUBE_CREDENTIAL_CACHE_REFRESH_MARGIN"); e != "" {
@@ -77,9 +79,24 @@ func main() {
 		}
 		refreshMargin = d
 	}
+	if e := os.Getenv("KUBE_CREDENTIAL_CACHE_DEFAULT_TTL"); e != "" {
+		d, err := time.ParseDuration(e)
+		if err != nil {
+			fatal("invalid environment variable 'KUBE_CREDENTIAL_CACHE_DEFAULT_TTL': %s", err.Error())
+		}
+		defaultTTL = d
+	}
+	if e := os.Getenv("KUBE_CREDENTIAL_CACHE_NO_EXPIRY_THRESHOLD"); e != "" {
+		d, err := time.ParseDuration(e)
+		if err != nil {
+			fatal("invalid environment variable 'KUBE_CREDENTIAL_CACHE_NO_EXPIRY_THRESHOLD': %s", err.Error())
+		}
+		noExpiryCutoff = d
+	}
 	if e := os.Getenv("KUBE_CREDENTIAL_CACHE_CACHEKEY_ENV_LIST"); e != "" {
 		cacheKeyEnvlist = strings.Split(e, ",")
 	}
+	debugEnabled = isTruthy(os.Getenv("KUBE_CREDENTIAL_CACHE_DEBUG"))
 
 	// cache key
 	//
@@ -126,16 +143,25 @@ func main() {
 		}
 	}
 
+	debugf("cache key: %s", cacheKey)
+
 	// select storage backend
 	backend := newBackend(os.Getenv("KUBE_CREDENTIAL_CACHE_BACKEND"))
+	debugf("backend: %T (KUBE_CREDENTIAL_CACHE_BACKEND=%q)", backend, os.Getenv("KUBE_CREDENTIAL_CACHE_BACKEND"))
 
 	// check cache
 	cache, ok, err := backend.Get(cacheKey)
 	if err != nil {
 		fatal("cache read failed: %s", err)
 	}
+	if ok {
+		debugf("cache hit: expires %s (in %s)", cache.Status.ExpirationTimestamp.Format(time.RFC3339), time.Until(cache.Status.ExpirationTimestamp).Round(time.Second))
+	} else {
+		debugf("cache miss")
+	}
 	if !ok || time.Until(cache.Status.ExpirationTimestamp) < refreshMargin {
 		// refresh (os.Args[1] is guaranteed present; checked at startup)
+		debugf("refreshing: running %q", strings.Join(os.Args[1:], " "))
 		cmd := exec.Command(os.Args[1], os.Args[2:]...)
 		cmd.Stderr = os.Stderr
 		bytes, err := cmd.Output()
@@ -156,9 +182,28 @@ func main() {
 			fatal("json.Unmarshal() failed(read command output): %s\nactual stdout: %s", err, string(bytes))
 		}
 
+		// default TTL for credentials without a usable expiry
+		//
+		// Some credential plugins (e.g. the passman krew plugin) emit an
+		// ExecCredential without a status.expirationTimestamp, which decodes to
+		// the zero time (0001-01-01T00:00:00Z). Such a credential is always
+		// "expired", so it would be re-fetched on every single call and never
+		// effectively cached. When the reported expiry is implausibly far in the
+		// past (more than noExpiryCutoff ago) we treat it as "no expiry provided"
+		// and substitute now+defaultTTL, while leaving genuinely-recently-expired
+		// credentials to refresh as before.
+		if adjusted, ok := withDefaultExpiry(cache, noExpiryCutoff, defaultTTL, time.Now()); ok {
+			debugf("credential expiration %s is more than %s in the past; treating as no-expiry and applying default TTL %s (expires %s)",
+				cache.Status.ExpirationTimestamp.Format(time.RFC3339), noExpiryCutoff, defaultTTL, adjusted.Status.ExpirationTimestamp.Format(time.RFC3339))
+			cache = adjusted
+		}
+
 		if err := backend.Set(cacheKey, cache); err != nil {
 			fatal("cache write failed: %s", err)
 		}
+		debugf("stored credential (expires %s)", cache.Status.ExpirationTimestamp.Format(time.RFC3339))
+	} else {
+		debugf("serving from cache")
 	}
 
 	// print
@@ -343,4 +388,40 @@ func fatal(format string, v ...any) {
 func log(format string, v ...any) {
 	fmt.Fprintf(os.Stderr, "%s: ", path.Base(os.Args[0]))
 	fmt.Fprintf(os.Stderr, format+"\n", v...)
+}
+
+// debugEnabled gates verbose diagnostics, controlled by KUBE_CREDENTIAL_CACHE_DEBUG.
+var debugEnabled bool
+
+// debugf logs a diagnostic line to stderr when debug output is enabled. It never
+// logs credential material (tokens / key data), only cache keys and metadata.
+func debugf(format string, v ...any) {
+	if !debugEnabled {
+		return
+	}
+	log("[debug] "+format, v...)
+}
+
+// withDefaultExpiry substitutes a default expiry for credentials that report no
+// usable one. When the credential's expiration is more than cutoff before now
+// (e.g. the zero time emitted by plugins like passman), it returns a copy with
+// the expiration set to now+ttl and ok=true. Otherwise it returns the credential
+// unchanged with ok=false, so genuinely-recently-expired credentials still refresh.
+func withDefaultExpiry(cred ClientAuthentication, cutoff, ttl time.Duration, now time.Time) (ClientAuthentication, bool) {
+	if now.Sub(cred.Status.ExpirationTimestamp) > cutoff {
+		cred.Status.ExpirationTimestamp = now.Add(ttl)
+		return cred, true
+	}
+	return cred, false
+}
+
+// isTruthy reports whether an environment variable value should be treated as
+// "on". Anything set and not explicitly falsey enables the feature.
+func isTruthy(v string) bool {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "", "0", "false", "no", "off":
+		return false
+	default:
+		return true
+	}
 }
