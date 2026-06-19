@@ -308,17 +308,19 @@ func resolveCacheFilepath() string {
 // variables, documented in the README).
 func usage(w *os.File) {
 	name := path.Base(os.Args[0])
-	fmt.Fprintf(w, "Usage: %s <command> [args...]\n", name)
-	fmt.Fprintf(w, "\n")
-	fmt.Fprintf(w, "Caching proxy for Kubernetes client-go credential plugins (ExecCredential).\n")
-	fmt.Fprintf(w, "Runs <command> [args...], caches its ExecCredential output, and serves it\n")
-	fmt.Fprintf(w, "from cache until the credential is near expiry.\n")
-	fmt.Fprintf(w, "\n")
-	fmt.Fprintf(w, "Example:\n")
-	fmt.Fprintf(w, "  %s aws --region <region> eks get-token --cluster-name <cluster>\n", name)
-	fmt.Fprintf(w, "\n")
-	fmt.Fprintf(w, "Configuration is via environment variables; see\n")
-	fmt.Fprintf(w, "https://github.com/ryodocx/kube-credential-cache#kcc-cache\n")
+	// Best-effort write; there is nothing useful to do if emitting usage fails.
+	_, _ = fmt.Fprintf(w, `Usage: %[1]s <command> [args...]
+
+Caching proxy for Kubernetes client-go credential plugins (ExecCredential).
+Runs <command> [args...], caches its ExecCredential output, and serves it
+from cache until the credential is near expiry.
+
+Example:
+  %[1]s aws --region <region> eks get-token --cluster-name <cluster>
+
+Configuration is via environment variables; see
+https://github.com/ryodocx/kube-credential-cache#kcc-cache
+`, name)
 }
 
 func fatal(format string, v ...any) {
