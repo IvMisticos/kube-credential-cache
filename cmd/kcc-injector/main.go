@@ -73,6 +73,7 @@ func main() {
 			if user.Exec.Command == replaceCmd {
 				user.Exec.Command = user.Exec.Args[0]
 				user.Exec.Args = user.Exec.Args[1:]
+				user.Exec.ProvideClusterInfo = false
 			}
 
 			search := func() (index int) {
@@ -102,6 +103,11 @@ func main() {
 				user.Exec.Args = append([]string{user.Exec.Command}, user.Exec.Args...)
 				user.Exec.Command = replaceCmd
 			}
+
+			// Expose the target cluster's API server URL to kcc-cache via the
+			// KUBERNETES_EXEC_INFO env var, so it can key the cache on the
+			// cluster (server URL) in addition to the user name.
+			user.Exec.ProvideClusterInfo = true
 
 			found := false
 			userEnv := api.ExecEnvVar{

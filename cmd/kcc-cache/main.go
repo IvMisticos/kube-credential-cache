@@ -57,18 +57,47 @@ func main() {
 	}
 
 	// cache key
-	var cacheKey = strings.Join(os.Args[1:], " ")
+	//
+	// When kubectl provides cluster info (provideClusterInfo: true, which
+	// kcc-injector enables), the target API server URL is available via the
+	// KUBERNETES_EXEC_INFO env var. Combined with the kubeconfig user name
+	// (KUBE_CREDENTIAL_CACHE_USER, also set by kcc-injector) this yields a
+	// stable cache key: it survives cosmetic argv changes and never serves one
+	// identity's credentials for another identity on the same cluster.
+	//
+	// If the server URL is unavailable (provideClusterInfo not set, or a manual
+	// setup), fall back to the legacy argv + env based key.
+	var cacheKey string
 	{
-		env := ""
-		for _, key := range cacheKeyEnvlist {
-			v := os.Getenv(key)
-			if v == "" {
-				continue
+		server := ""
+		if e := os.Getenv("KUBERNETES_EXEC_INFO"); e != "" {
+			var execInfo struct {
+				Spec struct {
+					Cluster struct {
+						Server string `json:"server"`
+					} `json:"cluster"`
+				} `json:"spec"`
 			}
-			env = fmt.Sprintf("%s %s='%s'", env, key, v)
+			if err := json.Unmarshal([]byte(e), &execInfo); err == nil {
+				server = execInfo.Spec.Cluster.Server
+			}
 		}
-		if env != "" {
-			cacheKey = fmt.Sprintf("%s # env:%s", cacheKey, env)
+
+		if server != "" {
+			cacheKey = fmt.Sprintf("user=%q server=%q", os.Getenv("KUBE_CREDENTIAL_CACHE_USER"), server)
+		} else {
+			cacheKey = strings.Join(os.Args[1:], " ")
+			env := ""
+			for _, key := range cacheKeyEnvlist {
+				v := os.Getenv(key)
+				if v == "" {
+					continue
+				}
+				env = fmt.Sprintf("%s %s='%s'", env, key, v)
+			}
+			if env != "" {
+				cacheKey = fmt.Sprintf("%s # env:%s", cacheKey, env)
+			}
 		}
 	}
 
