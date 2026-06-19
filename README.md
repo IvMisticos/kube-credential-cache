@@ -30,7 +30,7 @@ Work as caching proxy of [ExecCredential](https://kubernetes.io/docs/reference/c
 - kcc-cache
   - [x] Cache [ExecCredential](https://kubernetes.io/docs/reference/config-api/client-authentication.v1/#client-authentication-k8s-io-v1-ExecCredential) object
   - [x] Concern Command, Args, Env as cache-key
-  - [ ] Cache file encryption
+  - [x] Store credentials in the OS secret store (no plaintext on disk) via the `keyring` backend
   - [ ] kubeconfig automated maintenance
 - kcc-injector
   - [x] kubeconfig optimize (inject kcc-cache command automatically)
@@ -166,9 +166,32 @@ The cause is unknown. However, we ignore error by recreating the cache currently
 
 | Environment variable                    | default                                                                                                                                                                                                                                        | description                                        |
 |-----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------|
-| KUBE_CREDENTIAL_CACHE_FILE              | macOS:</br>`~/Library/Caches/kube-credential-cache/cache.json`</br>Linux:</br>`$XDG_CACHE_HOME/kube-credential-cache/cache.json`</br>`~/.cache/kube-credential-cache/cache.json`</br>Windows:</br>`%AppData%\kube-credential-cache\cache.json` | path of Cache file                                 |
+| KUBE_CREDENTIAL_CACHE_BACKEND           | _auto_ (`keyring` if the OS secret store is reachable, otherwise `file`)                                                                                                                                                                        | storage backend: `keyring` or `file`               |
+| KUBE_CREDENTIAL_CACHE_FILE              | macOS:</br>`~/Library/Caches/kube-credential-cache/cache.json`</br>Linux:</br>`$XDG_CACHE_HOME/kube-credential-cache/cache.json`</br>`~/.cache/kube-credential-cache/cache.json`</br>Windows:</br>`%AppData%\kube-credential-cache\cache.json` | path of Cache file (`file` backend only)           |
 | KUBE_CREDENTIAL_CACHE_REFRESH_MARGIN    | `30s`                                                                                                                                                                                                                                          | margin of credential refresh                       |
 | KUBE_CREDENTIAL_CACHE_CACHEKEY_ENV_LIST | `KUBE_CREDENTIAL_CACHE_USER,AWS_PROFILE,AWS_REGION,AWS_VAULT`                                                                                                                                                                                  | comma separated env names for additional cache-key |
+
+#### Storage backends
+
+By default credentials are kept **out of plaintext on disk** by storing them in the
+operating system's secret store, and fall back to a plaintext file only when no
+secret store is reachable (e.g. headless servers or CI).
+
+- `keyring` — store credentials in the OS secret store. The store handles
+  encryption-at-rest and ties access to your login session:
+  - **macOS**: Keychain
+  - **Linux**: Secret Service (GNOME Keyring / KWallet, via D-Bus)
+  - **Windows**: Credential Manager
+- `file` — store all credentials in a single plaintext JSON file
+  (`KUBE_CREDENTIAL_CACHE_FILE`), protected only by filesystem permissions
+  (`0600` file / `0700` directory).
+
+Set `KUBE_CREDENTIAL_CACHE_BACKEND` explicitly to force a specific backend.
+
+> :information_source: To clear cached credentials in the `keyring` backend,
+> delete the `kube-credential-cache` entries from your OS secret store
+> (Keychain Access on macOS, `secret-tool` / Seahorse on Linux, Credential
+> Manager on Windows). For the `file` backend, remove the cache file.
 
 ### kcc-injector
 
