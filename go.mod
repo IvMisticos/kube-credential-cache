@@ -1,4 +1,4 @@
-module github.com/ryodocx/kube-credential-cache
+module github.com/IvMisticos/kube-credential-cache
 
 go 1.26.4
 

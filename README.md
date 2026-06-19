@@ -3,7 +3,7 @@
 [![lint](https://github.com/IvMisticos/kube-credential-cache/actions/workflows/golangci-lint.yaml/badge.svg)](https://github.com/IvMisticos/kube-credential-cache/actions/workflows/golangci-lint.yaml)
 [![asdf-test](https://github.com/IvMisticos/kube-credential-cache/actions/workflows/asdf-test.yml/badge.svg)](https://github.com/IvMisticos/kube-credential-cache/actions/workflows/asdf-test.yml)
 [![GoReleaser](https://github.com/IvMisticos/kube-credential-cache/actions/workflows/goreleaser.yaml/badge.svg)](https://github.com/IvMisticos/kube-credential-cache/actions/workflows/goreleaser.yaml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ryodocx/kube-credential-cache)](https://goreportcard.com/report/github.com/ryodocx/kube-credential-cache)
+[![Go Report Card](https://goreportcard.com/badge/github.com/IvMisticos/kube-credential-cache)](https://goreportcard.com/report/github.com/IvMisticos/kube-credential-cache)
 
 Fast access to Kubernetes!
 Especially effective with kubectl + EKS, about 3~4x faster!
@@ -52,17 +52,17 @@ scoop bucket add IvMisticos https://github.com/IvMisticos/scoop-bucket
 scoop install kube-credential-cache
 
 # go install
-go install github.com/ryodocx/kube-credential-cache/cmd/kcc-cache@latest
-go install github.com/ryodocx/kube-credential-cache/cmd/kcc-injector@latest
+go install github.com/IvMisticos/kube-credential-cache/cmd/kcc-cache@latest
+go install github.com/IvMisticos/kube-credential-cache/cmd/kcc-injector@latest
 
 # asdf-vm: https://asdf-vm.com
 asdf plugin add kube-credential-cache
 
 # aqua: https://aquaproj.github.io
-aqua g -i ryodocx/kube-credential-cache
+aqua g -i IvMisticos/kube-credential-cache
 ```
 
-or download from [releases](https://github.com/ryodocx/kube-credential-cache/releases).
+or download from [releases](https://github.com/IvMisticos/kube-credential-cache/releases).
 All methods install both `kcc-cache` and `kcc-injector`.
 
 ## Usage(edit kubeconfig)

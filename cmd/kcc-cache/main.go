@@ -335,7 +335,7 @@ func fatal(format string, v ...any) {
 		}
 	}
 	_, _, line, _ := runtime.Caller(1)
-	fmt.Fprintf(os.Stderr, "error occurred at: https://github.com/ryodocx/kube-credential-cache/blob/%s/cmd/kcc-cache/main.go#L%d\n", commit, line)
+	fmt.Fprintf(os.Stderr, "error occurred at: https://github.com/IvMisticos/kube-credential-cache/blob/%s/cmd/kcc-cache/main.go#L%d\n", commit, line)
 
 	os.Exit(1)
 }

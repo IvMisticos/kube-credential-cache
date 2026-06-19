@@ -39,7 +39,7 @@ Server Version: v1.24.0
 go test -bench . -cpu 1 -benchtime 10s
 goos: darwin
 goarch: arm64
-pkg: github.com/ryodocx/kube-credential-cache/benchmark
+pkg: github.com/IvMisticos/kube-credential-cache/benchmark
 BenchmarkKubectlEKS                   14         811727732 ns/op # kubectl version (eks)
 BenchmarkKubectlEKSCache              52         211486883 ns/op # ↑ + cache
 BenchmarkGetCredentialEKS             21         539992825 ns/op # aws eks get-token --cluster-name example
@@ -50,7 +50,7 @@ BenchmarkGetCredentialCache         6933           1743538 ns/op # kcc-cache sh 
 BenchmarkKubectlSlow                  16         650367846 ns/op # kubectl version --user slow  (use get-credential-wait.sh only)
 BenchmarkGetCredentialSlow            22         496425106 ns/op # sh get-credential-wait.sh
 PASS
-ok      github.com/ryodocx/kube-credential-cache/benchmark      98.958s
+ok      github.com/IvMisticos/kube-credential-cache/benchmark      98.958s
 ```
 
 
