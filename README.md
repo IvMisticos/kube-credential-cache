@@ -36,16 +36,22 @@ Work as caching proxy of [ExecCredential](https://kubernetes.io/docs/reference/c
   - [x] kubeconfig optimize (inject kcc-cache command automatically)
   - [x] kubeconfig recovery (remove injected commands)
 
-## Effects
-A one of notable effect is, when used [`aws eks update-kubeconfig`](https://docs.aws.amazon.com/eks/latest/userguide/create-kubeconfig.html) to access EKS. about 500ms(about 3~4x) faster!
+Benchmark with [`aws eks update-kubeconfig`](https://docs.aws.amazon.com/eks/latest/userguide/create-kubeconfig.html) (about 500ms saved per call):
 
 ![](./benchmark/graph_eks.svg)
 
-benchmark is [here](./benchmark/)
+details [here](./benchmark/)
 
 ## Installation
 
 ```sh
+# Homebrew (macOS)
+brew install --cask IvMisticos/tap/kube-credential-cache
+
+# Scoop (Windows)
+scoop bucket add IvMisticos https://github.com/IvMisticos/scoop-bucket
+scoop install kube-credential-cache
+
 # go install
 go install github.com/ryodocx/kube-credential-cache/cmd/kcc-cache@latest
 go install github.com/ryodocx/kube-credential-cache/cmd/kcc-injector@latest
@@ -57,7 +63,8 @@ asdf plugin add kube-credential-cache
 aqua g -i ryodocx/kube-credential-cache
 ```
 
-or download from [releases](https://github.com/ryodocx/kube-credential-cache/releases)
+or download from [releases](https://github.com/ryodocx/kube-credential-cache/releases).
+All methods install both `kcc-cache` and `kcc-injector`.
 
 ## Usage(edit kubeconfig)
 
@@ -150,17 +157,13 @@ kubeconfig specification
 ## Troubleshooting
 
 ###### `error: You must be logged in to the server (the server has asked for the client to provide credentials)` at kubectl
-Incorrect credentials may be cached.  
-For example, occur when using the wrong pair of aws-vault context and kubecontext.  
-The root cause is aws command return invalid credential without error.  
-**Try remove cache file!** In macOS: `rm ~/Library/Caches/kube-credential-cache/cache.json`  
-※see below `kcc-cache` configuration for other environment
+Stale/invalid credentials may be cached (e.g. a wrong pair of aws-vault context and kubecontext, where `aws` returns an invalid credential without erroring).
+Clear the cache: delete the `kube-credential-cache` entries from your OS secret store (`keyring` backend) or remove the cache file (`file` backend, path below).
 
 ###### `...Corruption detected, recreate cache file`
-Detected broken cachefile.  
-The cause is unknown. However, we ignore error by recreating the cache currently.
+A broken cache file was detected. The cause is unknown; the cache is automatically recreated.
 
-## Configration
+## Configuration
 
 ### kcc-cache
 

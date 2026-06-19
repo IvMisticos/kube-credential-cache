@@ -32,6 +32,37 @@ archives:
     format_overrides:
       - goos: windows
         formats: [zip]
+homebrew_casks:
+  - name: kube-credential-cache
+    binaries:
+      - kcc-cache
+      - kcc-injector
+    repository:
+      owner: IvMisticos
+      name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    homepage: https://github.com/IvMisticos/kube-credential-cache
+    description: Caching proxy for Kubernetes credential plugins (ExecCredential)
+    license: MIT
+    # strip macOS quarantine so the unsigned binaries run without a Gatekeeper prompt
+    hooks:
+      post:
+        install: |
+          if system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/kcc-cache"]
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/kcc-injector"]
+          end
+
+scoops:
+  - name: kube-credential-cache
+    repository:
+      owner: IvMisticos
+      name: scoop-bucket
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    homepage: https://github.com/IvMisticos/kube-credential-cache
+    description: Caching proxy for Kubernetes credential plugins (ExecCredential)
+    license: MIT
+
 checksum:
   name_template: 'checksums.txt'
 changelog:
