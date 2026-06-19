@@ -1,9 +1,8 @@
 # kcc: kube-credential-cache
 
-[![lint](https://github.com/ryodocx/kube-credential-cache/actions/workflows/golangci-lint.yaml/badge.svg)](https://github.com/ryodocx/kube-credential-cache/actions/workflows/golangci-lint.yaml)
-[![CodeQL](https://github.com/ryodocx/kube-credential-cache/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/ryodocx/kube-credential-cache/actions/workflows/codeql-analysis.yml)
-[![asdf-test](https://github.com/ryodocx/kube-credential-cache/actions/workflows/asdf-test.yml/badge.svg)](https://github.com/ryodocx/kube-credential-cache/actions/workflows/asdf-test.yml)
-[![GoReleaser](https://github.com/ryodocx/kube-credential-cache/actions/workflows/goreleaser.yaml/badge.svg)](https://github.com/ryodocx/kube-credential-cache/actions/workflows/goreleaser.yaml)
+[![lint](https://github.com/IvMisticos/kube-credential-cache/actions/workflows/golangci-lint.yaml/badge.svg)](https://github.com/IvMisticos/kube-credential-cache/actions/workflows/golangci-lint.yaml)
+[![asdf-test](https://github.com/IvMisticos/kube-credential-cache/actions/workflows/asdf-test.yml/badge.svg)](https://github.com/IvMisticos/kube-credential-cache/actions/workflows/asdf-test.yml)
+[![GoReleaser](https://github.com/IvMisticos/kube-credential-cache/actions/workflows/goreleaser.yaml/badge.svg)](https://github.com/IvMisticos/kube-credential-cache/actions/workflows/goreleaser.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ryodocx/kube-credential-cache)](https://goreportcard.com/report/github.com/ryodocx/kube-credential-cache)
 
 Fast access to Kubernetes!
