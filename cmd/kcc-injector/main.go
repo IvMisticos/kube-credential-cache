@@ -157,7 +157,7 @@ func fatal(format string, v ...any) {
 
 	fmt.Fprintf(os.Stderr, "%s: ", path.Base(os.Args[0]))
 	fmt.Fprintf(os.Stderr, format+"\n", v...)
-	fmt.Fprintf(os.Stderr, "error occurred at: https://github.com/ryodocx/kube-credential-cache/blob/%s/cmd/kcc-injector/main.go#L%d\n", commit, line)
+	fmt.Fprintf(os.Stderr, "error occurred at: https://github.com/IvMisticos/kube-credential-cache/blob/%s/cmd/kcc-injector/main.go#L%d\n", commit, line)
 	flag.Usage()
 	os.Exit(1)
 }
