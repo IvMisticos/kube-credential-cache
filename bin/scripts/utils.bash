@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-GH_REPO="https://github.com/ryodocx/kube-credential-cache"
+GH_REPO="https://github.com/IvMisticos/kube-credential-cache"
 TOOL_NAME="kube-credential-cache"
 
 fail() {
@@ -24,7 +24,7 @@ sort_versions() {
 list_github_tags() {
   if which jq &>/dev/null; then
     # TODO: support pagination
-    curl "${curl_opts[@]}" "https://api.github.com/repos/ryodocx/kube-credential-cache/releases?per_page=100" |
+    curl "${curl_opts[@]}" "https://api.github.com/repos/IvMisticos/kube-credential-cache/releases?per_page=100" |
       jq -r '.[] | select(.prerelease == false) | .tag_name' |
       sed 's/^v//'
   else
