@@ -49,6 +49,22 @@ type Backend interface {
 }
 
 func main() {
+	// help
+	//
+	// kcc-cache wraps another command (os.Args[1:]) and execs it on a cache
+	// miss. Without this guard, `kcc-cache -h` would try to exec a binary
+	// literally named "-h" and fail with a confusing PATH error, so handle the
+	// usual help flags explicitly before treating the first arg as a command.
+	if len(os.Args) < 2 {
+		usage(os.Stderr)
+		os.Exit(1)
+	}
+	switch os.Args[1] {
+	case "-h", "--help", "help":
+		usage(os.Stdout)
+		os.Exit(0)
+	}
+
 	// configuration
 	var (
 		refreshMargin   = time.Second * 30
@@ -119,10 +135,7 @@ func main() {
 		fatal("cache read failed: %s", err)
 	}
 	if !ok || time.Until(cache.Status.ExpirationTimestamp) < refreshMargin {
-		// refresh
-		if len(os.Args) < 2 {
-			fatal("not enough command at args")
-		}
+		// refresh (os.Args[1] is guaranteed present; checked at startup)
 		cmd := exec.Command(os.Args[1], os.Args[2:]...)
 		cmd.Stderr = os.Stderr
 		bytes, err := cmd.Output()
@@ -287,6 +300,27 @@ func resolveCacheFilepath() string {
 		fatal("can't find CacheDir. fix error or set 'KUBE_CREDENTIAL_CACHE_FILE': %s", err)
 	}
 	return path.Join(cacheDir, "kube-credential-cache", "cache.json")
+}
+
+// usage prints how to invoke kcc-cache. It is a transparent caching wrapper:
+// the arguments after the program name are the credential command it runs and
+// caches, so there are no flags of its own (configuration is via environment
+// variables, documented in the README).
+func usage(w *os.File) {
+	name := path.Base(os.Args[0])
+	// Best-effort write; there is nothing useful to do if emitting usage fails.
+	_, _ = fmt.Fprintf(w, `Usage: %[1]s <command> [args...]
+
+Caching proxy for Kubernetes client-go credential plugins (ExecCredential).
+Runs <command> [args...], caches its ExecCredential output, and serves it
+from cache until the credential is near expiry.
+
+Example:
+  %[1]s aws --region <region> eks get-token --cluster-name <cluster>
+
+Configuration is via environment variables; see
+https://github.com/ryodocx/kube-credential-cache#kcc-cache
+`, name)
 }
 
 func fatal(format string, v ...any) {
