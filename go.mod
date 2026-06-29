@@ -4,7 +4,7 @@ go 1.26.4
 
 require (
 	github.com/zalando/go-keyring v0.2.8
-	k8s.io/client-go v0.36.1
+	k8s.io/client-go v0.36.2
 )
 
 require (
@@ -27,7 +27,7 @@ require (
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/apimachinery v0.36.1 // indirect
+	k8s.io/apimachinery v0.36.2 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260317180543-43fb72c5454a // indirect
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2 // indirect
